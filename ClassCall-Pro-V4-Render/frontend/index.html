@@ -1,0 +1,91 @@
+\
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ClassCall Pro V4</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--text:#172033;--muted:#6b7280;--line:#e5e7eb;--brand:#315efb;--brand2:#2447c8;--danger:#dc2626;--ok:#059669;--warn:#d97706}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select{font:inherit}button{cursor:pointer;border:0}.hidden{display:none!important}
+#login{min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(135deg,#eef3ff,#f8fafc)}
+.login-card{width:min(420px,100%);background:#fff;border:1px solid var(--line);border-radius:22px;padding:32px;box-shadow:0 20px 60px #00000012}
+.logo{font-size:26px;font-weight:800}.logo span{color:var(--brand)}.sub{color:var(--muted);margin:8px 0 24px}
+label{display:block;font-size:13px;font-weight:700;margin:14px 0 7px}input,select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;outline:none}input:focus,select:focus{border-color:var(--brand);box-shadow:0 0 0 3px #315efb18}
+.primary{background:var(--brand);color:#fff;padding:11px 16px;border-radius:10px;font-weight:700}.primary:hover{background:var(--brand2)}.secondary{background:#eef2ff;color:#2746a5;padding:10px 14px;border-radius:10px;font-weight:700}.danger{background:#fee2e2;color:#b91c1c;padding:9px 12px;border-radius:9px}.ghost{background:transparent;color:var(--muted);padding:9px}
+.app{display:flex;min-height:100vh}.side{width:245px;background:#111827;color:#e5e7eb;padding:20px 14px;position:fixed;inset:0 auto 0 0}.side .logo{padding:8px 12px 24px}.side .logo span{color:#7c9cff}.nav button{width:100%;text-align:left;background:transparent;color:#cbd5e1;padding:11px 12px;border-radius:10px;margin:2px 0}.nav button:hover,.nav button.active{background:#ffffff12;color:#fff}.main{margin-left:245px;width:calc(100% - 245px);padding:28px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:24px}.top h1{margin:0;font-size:26px}.userbox{color:var(--muted);font-size:13px;text-align:right}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}.metric{font-size:30px;font-weight:800;margin-top:7px}.muted{color:var(--muted);font-size:13px}.section{margin-top:18px}.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.toolbar>div{min-width:170px;flex:1}
+table{width:100%;border-collapse:collapse}th,td{padding:12px 9px;border-bottom:1px solid var(--line);text-align:left;font-size:14px}th{font-size:12px;color:var(--muted);text-transform:uppercase}
+.tablewrap{overflow:auto}.status{padding:5px 9px;border-radius:999px;font-size:12px;font-weight:700}.present{background:#d1fae5;color:#047857}.absent{background:#fee2e2;color:#b91c1c}.late{background:#fef3c7;color:#b45309}
+.formgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.actions{display:flex;gap:7px;flex-wrap:wrap}.empty{padding:28px;text-align:center;color:var(--muted)}
+.notice{padding:12px 14px;border-radius:10px;background:#eff6ff;color:#1d4ed8;margin-bottom:14px}.error{padding:10px;border-radius:9px;background:#fee2e2;color:#991b1b;margin:10px 0}
+@media(max-width:900px){.side{width:210px}.main{margin-left:210px;width:calc(100% - 210px)}.grid{grid-template-columns:repeat(2,1fr)}.formgrid{grid-template-columns:1fr}}
+@media(max-width:650px){.side{position:static;width:100%;min-height:auto}.app{display:block}.main{margin:0;width:100%;padding:18px}.nav{display:grid;grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr 1fr}.top{align-items:flex-start}.top h1{font-size:21px}}
+</style>
+</head>
+<body>
+<div id="login">
+ <div class="login-card">
+  <div class="logo">ClassCall <span>Pro</span></div><div class="sub">V4 • PostgreSQL • Multiusuário</div>
+  <form id="loginForm"><label>E-mail</label><input id="email" type="email" value="admin@classcall.local" required>
+  <label>Senha</label><input id="password" type="password" value="123456" required>
+  <div id="loginError" class="error hidden"></div><button class="primary" style="width:100%;margin-top:18px">Entrar</button></form>
+ </div>
+</div>
+<div id="app" class="app hidden">
+ <aside class="side"><div class="logo">ClassCall <span>Pro</span></div><nav class="nav" id="nav"></nav></aside>
+ <main class="main"><div class="top"><h1 id="title">Dashboard</h1><div><div id="userInfo" class="userbox"></div><button class="ghost" onclick="logout()">Sair</button></div></div><div id="view"></div></main>
+</div>
+<script>
+const state={token:localStorage.getItem("cc_v4_token"),user:null,classes:[],teachers:[],subjects:[],students:[]};
+const $=id=>document.getElementById(id);
+async function api(url,opt={}){opt.headers={...(opt.headers||{}), "Content-Type":"application/json"};if(state.token)opt.headers.Authorization="Bearer "+state.token;
+ const r=await fetch(url,opt);let d={};try{d=await r.json()}catch{}if(!r.ok){if(r.status===401)logout();throw Error(d.error||"Erro");}return d;}
+function logout(){localStorage.removeItem("cc_v4_token");state.token=null;state.user=null;$("app").classList.add("hidden");$("login").classList.remove("hidden")}
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+async function boot(){if(!state.token)return;try{state.user=await api("/api/me");showApp()}catch{}}
+function showApp(){ $("login").classList.add("hidden");$("app").classList.remove("hidden");$("userInfo").textContent=state.user.email+" • "+state.user.role;buildNav();go("dashboard")}
+function buildNav(){let items=[["dashboard","Dashboard"],["attendance","Frequência"],["students","Alunos"],["classes","Turmas"],["subjects","Disciplinas"],["teachers","Professores"],["history","Histórico"],["reports","Relatórios"]];if(state.user.role==="admin")items.push(["backup","Backup"]);
+ $("nav").innerHTML=items.map(x=>`<button data-page="${x[0]}" onclick="go('${x[0]}')">${x[1]}</button>`).join("");
+}
+function setActive(p){document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active",b.dataset.page===p))}
+async function go(page){setActive(page);$("title").textContent={dashboard:"Dashboard",attendance:"Frequência",students:"Alunos",classes:"Turmas",subjects:"Disciplinas",teachers:"Professores",history:"Histórico",reports:"Relatórios",backup:"Backup"}[page];try{
+ if(page==="dashboard")return dashboard(); if(page==="attendance")return attendance(); if(page==="students")return students();if(page==="classes")return classes();if(page==="subjects")return subjects();if(page==="teachers")return teachers();if(page==="history")return history();if(page==="reports")return reports();if(page==="backup")return backup();
+ }catch(e){$("view").innerHTML=`<div class="error">${esc(e.message)}</div>`}}
+async function loadBasics(){[state.classes,state.teachers,state.subjects,state.students]=await Promise.all([api("/api/classes"),api("/api/teachers"),api("/api/subjects"),api("/api/students")])}
+async function dashboard(){const d=await api("/api/dashboard");$("view").innerHTML=`<div class="grid">
+ ${metric("Alunos",d.students)}${metric("Turmas",d.classes)}${metric("Professores",d.teachers)}${metric("Presentes hoje",d.today.present||0)}
+ </div><div class="card section"><h3>Últimos 7 dias</h3><div class="tablewrap"><table><thead><tr><th>Data</th><th>Presentes</th><th>Faltas</th><th>Atrasos</th></tr></thead><tbody>${d.week.map(x=>`<tr><td>${x.date}</td><td>${x.present}</td><td>${x.absent}</td><td>${x.late}</td></tr>`).join("")||`<tr><td colspan=4 class=empty>Sem registros.</td></tr>`}</tbody></table></div></div>`}
+function metric(a,b){return `<div class="card"><div class="muted">${a}</div><div class="metric">${b}</div></div>`}
+async function attendance(){await loadBasics();const date=new Date().toISOString().slice(0,10);$("view").innerHTML=`<div class="card"><div class="toolbar">
+ <div><label>Turma</label><select id="attClass">${state.classes.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("")}</select></div>
+ <div><label>Disciplina</label><select id="attSub">${state.subjects.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("")}</select></div>
+ <div><label>Data</label><input id="attDate" type="date" value="${date}"></div>
+ <button class="primary" onclick="loadAtt()">Carregar</button></div><div id="attTable" class="section"></div></div>`;loadAtt()}
+async function loadAtt(){const cid=$("attClass").value,sid=$("attSub").value,date=$("attDate").value;const [all,att]=await Promise.all([api("/api/students"),api(`/api/attendance?date=${date}&class_id=${cid}&subject_id=${sid}`)]);const studs=all.filter(s=>String(s.class_id)===String(cid));const map=Object.fromEntries(att.map(a=>[a.student_id,a.status]));
+ $("attTable").innerHTML=`<div class="actions"><button class="secondary" onclick="markAll('present')">Todos presentes</button><button class="secondary" onclick="markAll('absent')">Todos faltaram</button><button class="primary" onclick="saveAtt()">Salvar frequência</button></div><div class="tablewrap"><table><thead><tr><th>Aluno</th><th>Matrícula</th><th>Status</th></tr></thead><tbody>${studs.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(s.registration)}</td><td><select data-student="${s.id}"><option value="present" ${map[s.id]==="present"?"selected":""}>Presente</option><option value="absent" ${map[s.id]==="absent"?"selected":""}>Falta</option><option value="late" ${map[s.id]==="late"?"selected":""}>Atrasado</option></select></td></tr>`).join("")||`<tr><td colspan=3 class=empty>Nenhum aluno nesta turma.</td></tr>`}</tbody></table></div>`}
+function markAll(v){document.querySelectorAll("#attTable select[data-student]").forEach(x=>x.value=v)}
+async function saveAtt(){const records=[...document.querySelectorAll("#attTable select[data-student]")].map(x=>({student_id:Number(x.dataset.student),status:x.value}));await api("/api/attendance/bulk",{method:"POST",body:JSON.stringify({date:$("attDate").value,class_id:Number($("attClass").value),subject_id:Number($("attSub").value),records})});alert("Frequência salva com sucesso.");}
+async function students(){await loadBasics();$("view").innerHTML=crudStudents()}
+function crudStudents(){return `<div class="card">${state.user.role==="admin"?`<form onsubmit="addStudent(event)" class="formgrid"><div><label>Nome</label><input id="sn" required></div><div><label>Matrícula</label><input id="sr" required></div><div><label>Turma</label><select id="sc">${state.classes.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("")}</select></div><div><button class="primary">Adicionar aluno</button></div></form>`:""}<div class="tablewrap section"><table><thead><tr><th>Nome</th><th>Matrícula</th><th>Turma</th><th></th></tr></thead><tbody>${state.students.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(s.registration)}</td><td>${esc(s.class_name)}</td><td>${state.user.role==="admin"?`<button class="danger" onclick="del('/api/students/${s.id}','students')">Excluir</button>`:""}</td></tr>`).join("")||`<tr><td colspan=4 class=empty>Sem alunos.</td></tr>`}</tbody></table></div></div>`}
+async function addStudent(e){e.preventDefault();await api("/api/students",{method:"POST",body:JSON.stringify({name:$("sn").value,registration:$("sr").value,class_id:Number($("sc").value)})});students()}
+async function classes(){await loadBasics();$("view").innerHTML=`<div class="card">${adminForm("Nome da turma","cn","Descrição","cd","addClass")}${simpleTable(state.classes,["name","description"],"/api/classes","classes")}</div>`}
+function adminForm(a,id,b,id2,fn){return state.user.role!=="admin"?"":`<form onsubmit="${fn}(event)" class="formgrid"><div><label>${a}</label><input id="${id}" required></div><div><label>${b}</label><input id="${id2}"></div><div><button class="primary">Adicionar</button></div></form>`}
+function simpleTable(rows,cols,url,page){return `<div class="tablewrap section"><table><thead><tr>${cols.map(c=>`<th>${c}</th>`).join("")}<th></th></tr></thead><tbody>${rows.map(r=>`<tr>${cols.map(c=>`<td>${esc(r[c])}</td>`).join("")}<td>${state.user.role==="admin"?`<button class="danger" onclick="del('${url}/${r.id}','${page}')">Excluir</button>`:""}</td></tr>`).join("")||`<tr><td colspan=${cols.length+1} class=empty>Sem registros.</td></tr>`}</tbody></table></div>`}
+async function addClass(e){e.preventDefault();await api("/api/classes",{method:"POST",body:JSON.stringify({name:$("cn").value,description:$("cd").value})});classes()}
+async function subjects(){await loadBasics();$("view").innerHTML=`<div class="card">${state.user.role==="admin"?`<form onsubmit="addSubject(event)" class="formgrid"><div><label>Disciplina</label><input id="subn" required></div><div><label>Professor</label><select id="subt"><option value="">Sem professor</option>${state.teachers.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("")}</select></div><div><label>Carga horária</label><input id="subw" type="number" min="0"></div><div><button class="primary">Adicionar</button></div></form>`:""}${simpleTable(state.subjects.map(x=>({...x,teacher:x.teacher_name||"—"})),["name","teacher","workload"],"/api/subjects","subjects")}</div>`}
+async function addSubject(e){e.preventDefault();await api("/api/subjects",{method:"POST",body:JSON.stringify({name:$("subn").value,teacher_id:$("subt").value||null,workload:Number($("subw").value||0)})});subjects()}
+async function teachers(){await loadBasics();$("view").innerHTML=`<div class="card">${state.user.role==="admin"?`<div class="notice">Ao cadastrar um professor, o e-mail e a senha criam automaticamente a conta de acesso dele.</div><form onsubmit="addTeacher(event)" class="formgrid"><div><label>Nome</label><input id="tn" required></div><div><label>E-mail de acesso</label><input id="te" type="email" required></div><div><label>Telefone</label><input id="tp"></div><div><label>Senha inicial</label><input id="tw" type="password" minlength="6" required></div><div><button class="primary">Cadastrar professor</button></div></form>`:""}${simpleTable(state.teachers,["name","email","phone"],"/api/teachers","teachers")}</div>`}
+async function addTeacher(e){e.preventDefault();await api("/api/teachers",{method:"POST",body:JSON.stringify({name:$("tn").value,email:$("te").value,phone:$("tp").value,password:$("tw").value})});teachers()}
+async function history(){const r=await api("/api/history");$("view").innerHTML=`<div class="card"><div class="tablewrap"><table><thead><tr><th>Data</th><th>Turma</th><th>Disciplina</th><th>Presentes</th><th>Faltas</th><th>Atrasos</th><th>Frequência</th></tr></thead><tbody>${r.map(x=>`<tr><td>${x.date}</td><td>${esc(x.class_name)}</td><td>${esc(x.subject_name)}</td><td>${x.present}</td><td>${x.absent}</td><td>${x.late}</td><td>${x.frequency}%</td></tr>`).join("")||`<tr><td colspan=7 class=empty>Sem histórico.</td></tr>`}</tbody></table></div></div>`}
+async function reports(){await loadBasics();$("view").innerHTML=`<div class="card"><div class="toolbar"><div><label>Turma</label><select id="rfClass"><option value="">Todas</option>${state.classes.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("")}</select></div><div><label>Disciplina</label><select id="rfSub"><option value="">Todas</option>${state.subjects.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("")}</select></div><div><label>De</label><input id="rfFrom" type="date"></div><div><label>Até</label><input id="rfTo" type="date"></div><button class="primary" onclick="runReport()">Gerar</button></div><div id="report" class="section"></div></div>`}
+async function runReport(){const q=new URLSearchParams();if($("rfClass").value)q.set("class_id",$("rfClass").value);if($("rfSub").value)q.set("subject_id",$("rfSub").value);if($("rfFrom").value)q.set("from",$("rfFrom").value);if($("rfTo").value)q.set("to",$("rfTo").value);const r=await api("/api/reports/frequency?"+q);window._report=r;$("report").innerHTML=`<div class="actions"><button class="secondary" onclick="exportCSV()">Exportar CSV</button></div><div class="tablewrap"><table><thead><tr><th>Aluno</th><th>Matrícula</th><th>Turma</th><th>Chamadas</th><th>Presentes</th><th>Faltas</th><th>Atrasos</th><th>Frequência</th></tr></thead><tbody>${r.map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.registration)}</td><td>${esc(x.class_name)}</td><td>${x.calls}</td><td>${x.present}</td><td>${x.absent}</td><td>${x.late}</td><td>${x.frequency||0}%</td></tr>`).join("")||`<tr><td colspan=8 class=empty>Sem dados para o filtro.</td></tr>`}</tbody></table></div>`}
+function exportCSV(){const r=window._report||[];const cols=["name","registration","class_name","calls","present","absent","late","frequency"];const lines=[cols.join(";"),...r.map(x=>cols.map(c=>`"${String(x[c]??"").replace(/"/g,'""')}"`).join(";"))];const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+lines.join("\\n")],{type:"text/csv;charset=utf-8"}));a.download="classcall-relatorio.csv";a.click();}
+async function backup(){const b=await api("/api/backup");$("view").innerHTML=`<div class="card"><h3>Backup do sistema</h3><p class="muted">Exporta os dados atuais do PostgreSQL em JSON. Este backup não contém senhas.</p><button class="primary" onclick='downloadJSON(${JSON.stringify(b)})'>Baixar backup JSON</button></div>`}
+function downloadJSON(o){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(o,null,2)],{type:"application/json"}));a.download="classcall-backup.json";a.click()}
+async function del(url,page){if(!confirm("Excluir este registro?"))return;await api(url,{method:"DELETE"});go(page)}
+$("loginForm").onsubmit=async e=>{e.preventDefault();$("loginError").classList.add("hidden");try{const r=await api("/api/auth/login",{method:"POST",body:JSON.stringify({email:$("email").value,password:$("password").value})});state.token=r.token;localStorage.setItem("cc_v4_token",r.token);state.user=r.user;showApp()}catch(err){$("loginError").textContent=err.message;$("loginError").classList.remove("hidden")}};
+boot();
+</script>
+</body></html>
