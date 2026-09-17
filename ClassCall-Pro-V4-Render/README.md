@@ -34,6 +34,19 @@ npm start
 
 O frontend é servido pelo próprio Express.
 
+## Publicação no GitHub Pages
+O arquivo `index.html` da raiz encaminha para o frontend em `ClassCall-Pro-V4-Render/frontend/`.
+No GitHub, abra **Settings → Pages**, escolha **Deploy from a branch**, selecione `main` e a pasta `/ (root)`.
+
+O GitHub Pages hospeda somente a interface. Para login, frequência e dados, o backend precisa estar publicado no Render usando o `render.yaml`.
+Depois do deploy, abra o Pages informando a URL da API uma vez, por exemplo:
+
+```text
+https://senscoderads-svg.github.io/Chamado_EBD/?api=https://SEU-SERVICO.onrender.com
+```
+
+A URL fica guardada no navegador. Para trocar a API, basta abrir novamente com outro parâmetro `api`.
+
 ## Variáveis
 - `DATABASE_URL`: URL do PostgreSQL
 - `JWT_SECRET`: segredo JWT (mínimo 32 caracteres)
