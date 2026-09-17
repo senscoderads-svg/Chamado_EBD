@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: classcall-pro-v4
+    runtime: node
+    plan: free
+    rootDir: ClassCall-Pro-V4-Render/backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: classcall-pro-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: NODE_ENV
+        value: production
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: PGSSLMODE
+        value: require
+
+databases:
+  - name: classcall-pro-db
+    plan: free
